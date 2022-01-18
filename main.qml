@@ -26,6 +26,7 @@ Window {
 
             MixButton {
                Layout.alignment: Qt.AlignHCenter
+               onCliced: board.mix();
             }
         }
     }

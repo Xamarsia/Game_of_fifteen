@@ -2,43 +2,18 @@ import QtQuick 2.0
 
 Rectangle {
     id: root
+    signal itemCliced();
 
     property alias text: label.text
-    property int emptyCell: 0
-    signal horizontalMove();
-    signal verticalMove();
+    signal cliced()
     color: "#00ffffff"
 
-    function getColumn(index){
-        if(index > 15 || index < 0)
-        {
-            return -1;
-        }
-        return (index / 4) | 0;
-    }
-
-    function getRow(index){
-        if(index > 15 || index < 0)
-        {
-            return -1;
-        }
-        return index % 4;
-    }
-
+    signal horizontalMove();
+    signal verticalMove();
     MouseArea {
         anchors.fill: parent
-        onClicked:{
-            if((Math.abs(getRow(model.index) - getRow(emptyCell)) != 1 ) &&
-               (Math.abs(getColumn(model.index) - getColumn(emptyCell)) != 1)){}
-
-            else if(Math.abs(getRow(model.index) - getRow(emptyCell)) == 1 &&
-                    Math.abs(getColumn(model.index) - getColumn(emptyCell)) == 0){
-                root.horizontalMove();
-            }
-            else if(Math.abs(getColumn(model.index) - getColumn(emptyCell)) != 0 &&
-                    Math.abs(getRow(model.index) - getRow(emptyCell)) == 0 ){
-                root.verticalMove();
-            }
+        onClicked: {
+            root.itemCliced()
         }
     }
     Rectangle {

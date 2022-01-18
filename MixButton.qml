@@ -1,9 +1,13 @@
 import QtQuick 2.0
+//#include <QList>
 
 Rectangle {
+    id: root
+
     width: 160
     height: 84
     color: "khaki"
+    signal cliced();
 
     Rectangle {
         width: 140
@@ -26,7 +30,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         onClicked: {
-    //        TODO Cell Mix
+            root.cliced();
             }
         }
     }
