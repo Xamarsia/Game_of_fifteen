@@ -1,30 +1,54 @@
 import QtQuick 2.0
 import QtQml.Models 2.15
+import QtQuick.Controls 2.12
+
+import "BoardUtils.js" as BoardUtils
 
 Rectangle {
     id: root
 
     property int emptyCellIndex: 0
-    property int rowsCount: 2
-    property int columnsCount: 4
+    readonly property int rowsCount: 4
+    readonly property int columnsCount: 4
+
+    Component.onCompleted: root.mix()
 
     anchors.margins: 20
     color: "khaki"
 
-    function getColumn(index) {
-        if(index > ((rowsCount*columnsCount)-1) || index < 0)
-        {
-            return -1;
+    function getInversionsCount() {
+        var invCount = 0;
+        for(var i = 0; i < rowsCount * columnsCount ; i++) {
+            if (gridModel.get(i).value) {
+                for (var j = 0; j < i; ++j) {
+                    if(gridModel.get(i).value > gridModel.get(j).value) {
+                        ++invCount;
+                    }
+                }
+            } else {
+                invCount +=  i/rowsCount
+            }
         }
-        return index - getRow(index) * columnsCount;
+        return invCount;
     }
 
-    function getRow(index) {
-        if(index > ((rowsCount*columnsCount)-1) || index < 0)
-        {
-            return -1;
+    function isSolvable() {
+        for(var i = 0; i < (rowsCount*columnsCount - 1) ; i++) {
+            var invCount = getInversionsCount();
+            return !(invCount & 1)
         }
-        return (index / columnsCount) | 0;
+    }
+
+    function userWon() {
+        if(emptyCellIndex == 0) {
+            return 0
+        }
+        for(var i = 0; i < (gridModel.count - 2) ; i++) {
+            if(gridModel.get(i).value > gridModel.get(i+1).value) {
+                return 0
+            }
+        }
+        return 1
     }
 
     function mix() {
@@ -35,7 +59,6 @@ Rectangle {
 
         gridModel.clear()
         while(items.length != 0) {
-
             var i = Math.floor(Math.random() * items.length)
             var item = items[i]
             if(item === 0) {
@@ -46,10 +69,15 @@ Rectangle {
             items[items.length - 1] = item
             items.pop()
         }
+        if(userWon()) {
+            mix()
+        }
+        if(!isSolvable()) {
+            mix()
+        }
     }
 
     function moveEmptyItemDown() {
-        console.log("Down")
         if(emptyCellIndex + columnsCount < (rowsCount * columnsCount)) {
             gridModel.move(emptyCellIndex, emptyCellIndex + (columnsCount-1), 1)
             gridModel.move(emptyCellIndex + columnsCount, emptyCellIndex, 1)
@@ -58,7 +86,6 @@ Rectangle {
     }
 
     function moveEmptyItemLeft() {
-        console.log("Left")
         if((emptyCellIndex) % columnsCount != 0) {
             gridModel.move(emptyCellIndex - 1, emptyCellIndex, 1)
             emptyCellIndex = emptyCellIndex - 1
@@ -66,7 +93,6 @@ Rectangle {
     }
 
     function moveEmptyItemRight() {
-        console.log("Right")
         if((emptyCellIndex+1) % columnsCount != 0) {
             gridModel.move(emptyCellIndex + 1, emptyCellIndex, 1)
             emptyCellIndex = emptyCellIndex + 1
@@ -74,7 +100,6 @@ Rectangle {
     }
 
     function moveEmptyItemUp() {
-        console.log("Up")
         if(emptyCellIndex - columnsCount >= 0) {
             gridModel.move(emptyCellIndex, emptyCellIndex - (columnsCount-1), 1)
             gridModel.move(emptyCellIndex - columnsCount, emptyCellIndex, 1)
@@ -105,33 +130,69 @@ Rectangle {
                 NumberAnimation { properties: "y"; duration: 500 }
             }
 
+            Dialog {
+                id: victoryDialog
+
+                x: (parent.width - width) / 2
+                y: (parent.height - height) / 2
+                parent: Overlay.overlay
+                modal: true
+                title: "Restart the game"
+                standardButtons: Dialog.Close | Dialog.Reset
+
+                Column {
+                    anchors.fill: parent
+                    spacing: 4
+                    Label {
+                        text: "Сongratulations!"
+                        color: "red"
+                        font.pixelSize: 24
+                    }
+                    Label {
+                        text: "You are a winner"
+                        font.pixelSize: 18
+                    }
+                }
+
+                onReset: {
+                     board.mix();
+                     victoryDialog.close()
+                }
+            }
+
             delegate: Cell {
                 id: cell
+
                 text: model.value
                 width: grid.cellWidth
                 height: grid.cellHeight
                 opacity: (model.value !== 0) ? 1 : 0
+
                 onItemCliced: {
-                    var rowDistance = getRow(model.index) - getRow(emptyCellIndex)
-                    var columnDistance = getColumn(model.index) - getColumn(emptyCellIndex)
+                    var rowDistance = BoardUtils.getRow(model.index, rowsCount, columnsCount) - BoardUtils.getRow(emptyCellIndex, rowsCount, columnsCount)
+                    var columnDistance = BoardUtils.getColumn(model.index, rowsCount, columnsCount) - BoardUtils.getColumn(emptyCellIndex, rowsCount, columnsCount)
 
                     if(Math.abs(rowDistance) == 1 && columnDistance == 0) {
 
-                        if(getRow(model.index) < getRow(emptyCellIndex)) {
+                        if(BoardUtils.getRow(model.index, rowsCount, columnsCount) < BoardUtils.getRow(emptyCellIndex, rowsCount, columnsCount)) {
                             moveEmptyItemUp()
-                        }
-                        else {
+                        } else {
                             moveEmptyItemDown()
                         }
-                    }
 
-                    else if(Math.abs(columnDistance) == 1 && rowDistance == 0 ) {
-
-                        if(getColumn(model.index) < getColumn(emptyCellIndex)) {
-                            moveEmptyItemLeft()
+                        if(userWon() && emptyCellIndex != 0){
+                            victoryDialog.open()
                         }
-                        else {
+                    } else if(Math.abs(columnDistance) == 1 && rowDistance == 0 ) {
+
+                        if(BoardUtils.getColumn(model.index, rowsCount, columnsCount) < BoardUtils.getColumn(emptyCellIndex, rowsCount, columnsCount)) {
+                            moveEmptyItemLeft()
+                        } else {
                             moveEmptyItemRight()
+                        }
+
+                        if(userWon() && emptyCellIndex != 0){
+                            victoryDialog.open()
                         }
                     }
                 }

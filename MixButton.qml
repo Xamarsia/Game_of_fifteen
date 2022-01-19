@@ -1,37 +1,31 @@
 import QtQuick 2.0
-//#include <QList>
+import QtQuick.Controls 2.15
 
 Rectangle {
     id: root
 
+    signal cliced();
+
     width: 160
     height: 84
     color: "khaki"
-    signal cliced();
 
-    Rectangle {
+    Button {
+        id: mixButton
         width: 140
         height: 64
-
-        radius: 45
-        color: "orange"
+        text: qsTr("Mix")
         anchors.fill: parent
         anchors.leftMargin: 20
         anchors.rightMargin: 20
         anchors.bottomMargin: 20
-        border.color: Qt.darker("orange", 2)
 
-    Text {
-        text: qsTr("Mix")
-        font.pixelSize: 24
-        anchors.centerIn: parent
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: {
-            root.cliced();
-            }
+        background: Rectangle {
+            radius: 45
+            anchors.fill: parent
+            border.color: Qt.darker("orange", 2)
+            color: parent.hovered ? "darkorange" : "orange"
         }
+        onClicked: root.cliced();
     }
 }
